@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comandante de Prompt</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        /* Estilos Gerais */
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #000; /* Fundo preto para o canvas de fundo */
+            color: #e0e0e0;
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Canvas de Fundo Animado */
+        #backgroundCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-color: #1a1a2e;
+        }
+
+        /* Contêiner Principal do Jogo */
+        .game-container {
+            border: 4px solid #4a4a8a;
+            background-color: rgba(22, 36, 71, 0.9);
+            box-shadow: 0 0 15px rgba(74, 74, 138, 0.7);
+            image-rendering: pixelated;
+            width: 95%;
+            max-width: 800px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            margin: 1rem;
+        }
+
+        /* Tela Inicial */
+        #startScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 450px;
+            text-align: center;
+            padding: 2rem;
+        }
+        #startScreen h1 {
+            font-size: 2rem;
+            color: #00bcd4;
+            text-shadow: 2px 2px #1f4068;
+            margin-bottom: 2rem;
+        }
+        #startScreen .start-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Cabeçalho (Pontos, Vidas, Som) */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-b: 2px solid #4a4a8a;
+            padding-bottom: 0.5rem;
+        }
+        .game-title-header {
+             font-size: 1.25rem;
+             color: #00bcd4;
+        }
+        .game-stats {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .game-stats > div {
+             text-align: right;
+        }
+
+        /* Botão de Som */
+        #muteBtn {
+            background: none;
+            border: 2px solid #e0e0e0;
+            color: #e0e0e0;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        #muteBtn:hover {
+            background-color: #4a4a8a;
+        }
+        #muteBtn .fa-volume-mute { display: none; }
+        #muteBtn.muted .fa-volume-up { display: none; }
+        #muteBtn.muted .fa-volume-mute { display: inline-block; }
+
+
+        /* Estilização geral do texto */
+        h1, h2, h3, label, button, select, p, div, a {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* Estilização geral dos botões */
+        .btn {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            background-color: #e43f5a;
+            color: #ffffff;
+            text-shadow: 1px 1px #000000;
+            box-shadow: 3px 3px 0px #1f4068;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: inline-block;
+            text-align: center;
+            line-height: 1.2;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .btn:disabled {
+            background-color: #555; color: #999; cursor: not-allowed; box-shadow: 3px 3px 0px #333;
+            transform: none !important;
+        }
+        .btn:active:not(:disabled) {
+            transform: translate(2px, 2px); box-shadow: 1px 1px 0px #1f4068;
+        }
+        .btn-secondary {
+            background-color: #1b1b2f;
+            box-shadow: 3px 3px 0px #4a4a8a;
+        }
+        .btn-secondary:active:not(:disabled) { box-shadow: 1px 1px 0px #4a4a8a; }
+        .btn-alt {
+            background-color: #ffb86c;
+            color: #1a1a2e; text-shadow: 1px 1px #f8f8f2; box-shadow: 3px 3px 0px #8b4513;
+        }
+        .btn-alt:active:not(:disabled) { box-shadow: 1px 1px 0px #8b4513; }
+        .btn-launch {
+            background-color: #50fa7b;
+            color: #1a1a2e; text-shadow: 1px 1px #f8f8f2; box-shadow: 3px 3px 0px #2aaa57;
+            width: auto;
+        }
+        .btn-launch:active:not(:disabled) { box-shadow: 1px 1px 0px #2aaa57; }
+        .btn-primary {
+            background-color: #00bcd4;
+            color: #1a1a2e;
+            text-shadow: 1px 1px #e0e0e0;
+            box-shadow: 3px 3px 0px #008ba3;
+        }
+        .btn-primary:active:not(:disabled) {
+            box-shadow: 1px 1px 0px #008ba3;
+        }
+        .btn-start {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            background-color: #50fa7b;
+            color: #1a1a2e;
+            text-shadow: 1px 1px #f8f8f2;
+            box-shadow: 4px 4px 0px #2aaa57;
+        }
+         .btn-start:active:not(:disabled) {
+             transform: translate(3px, 3px); box-shadow: 1px 1px 0px #2aaa57;
+         }
+         .btn-linkedin {
+             background-color: #0e76a8;
+             box-shadow: 3px 3px 0px #073b54;
+         }
+         .btn-linkedin:active:not(:disabled) {
+              transform: translate(2px, 2px); box-shadow: 1px 1px 0px #073b54;
+         }
+         /* Botão Apoiar */
+         .btn-support {
+             background-color: #bd93f9; /* Roxo */
+             color: #1a1a2e;
+             text-shadow: 1px 1px #f8f8f2;
+             box-shadow: 3px 3px 0px #6a409e;
+         }
+         .btn-support:active:not(:disabled) {
+              transform: translate(2px, 2px); box-shadow: 1px 1px 0px #6a409e;
+         }
+
+
+        /* Input/Textarea */
+        textarea, select {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1f4068; border: 2px solid #4a4a8a; color: #f5f5f5;
+            padding: 10px; outline: none; resize: none; width: 100%;
+            border-radius: 4px;
+        }
+        textarea:disabled { background-color: #333; color: #777; cursor: not-allowed; }
+        textarea::placeholder { color: #a0a0c0; }
+        select {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23e0e0e0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat; background-position: right 10px center; background-size: 18px; padding-right: 35px;
+        }
+        option {
+             background-color: #1f4068;
+             color: #f5f5f5;
+        }
+        option.completed-level { color: #50fa7b !important; font-style: italic; }
+
+
+        /* Feedback */
+        .feedback-area {
+            border: 2px dashed #4a4a8a; background-color: rgba(0, 0, 0, 0.2); padding: 1rem;
+            display: flex; flex-direction: column; justify-content: space-between;
+            border-radius: 4px;
+        }
+        .feedback-item { margin-bottom: 5px; padding: 3px 5px; border-radius: 2px; transition: background-color 0.2s ease, transform 0.2s ease; }
+        .feedback-good { color: #50fa7b; background-color: rgba(80, 250, 123, 0.1); border-left: 3px solid #50fa7b; }
+        .feedback-improve { color: #f1fa8c; background-color: rgba(241, 250, 140, 0.1); border-left: 3px solid #f1fa8c; }
+        .feedback-critical { color: #ff5555; background-color: rgba(255, 85, 85, 0.1); border-left: 3px solid #ff5555; }
+        .feedback-bonus { color: #bd93f9; background-color: rgba(189, 147, 249, 0.1); border-left: 3px solid #bd93f9; font-weight: bold; }
+        .feedback-highlight { background-color: rgba(255, 255, 100, 0.3) !important; transform: scale(1.02); }
+
+
+        /* Animações */
+        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .flash-success { animation: flash 0.5s 2; color: #50fa7b; }
+        .flash-fail { animation: flash 0.5s 2; color: #ff5555; }
+        .flash-perfect { animation: flash 0.6s 3; color: #bd93f9; }
+
+        @keyframes missileLaunch { 0% { transform: translateY(0) scale(1); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-200px) scale(0.5); opacity: 0; } }
+        #missile { font-size: 2rem; display: inline-block; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); opacity: 0; }
+        .animate-missile { animation: missileLaunch 1.5s ease-in forwards; }
+
+
+        /* Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Telas de Conteúdo */
+        .content-screen { min-height: 420px; display: flex; flex-direction: column; }
+
+        /* Modais (Gemini e Apoio) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background-color: #162447; border: 4px solid #bd93f9; padding: 1.5rem; text-align: center; max-width: 90%; width: 500px; position: relative; box-shadow: 0 0 20px rgba(189, 147, 249, 0.5); border-radius: 8px; }
+        .modal-close-btn { position: absolute; top: 5px; right: 10px; background: none; border: none; font-size: 1.5rem; color: #ff5555; cursor: pointer; font-family: 'Press Start 2P', cursive; padding: 0; line-height: 1; }
+        #modalPromptDisplay { background-color: #1f4068; border: 1px solid #4a4a8a; color: #f5f5f5; padding: 10px; width: 100%; height: 150px; overflow-y: auto; margin-top: 1rem; margin-bottom: 1.5rem; text-align: left; font-size: 0.7rem; white-space: pre-wrap; border-radius: 4px; }
+        /* Estilo específico para modal de apoio */
+        #supportModal .modal-content { border-color: #50fa7b; /* Borda verde */}
+        #supportModal h3 { color: #50fa7b; } /* Título verde */
+        #supportKey { /* Estilo para a chave Pix */
+            background-color: #1f4068;
+            padding: 8px;
+            margin: 1rem auto;
+            border: 1px dashed #4a4a8a;
+            color: #f1fa8c; /* Amarelo para destaque */
+            font-size: 0.8rem;
+            word-break: break-all; /* Quebra chaves longas */
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <canvas id="backgroundCanvas"></canvas>
+
+    <div class="game-container p-4 sm:p-6 text-xs sm:text-sm">
+
+        <div id="startScreen" class="">
+            <h1>Comandante de Prompt</h1>
+            <div class="start-buttons">
+                 <button id="startGameBtn" class="btn btn-start">Iniciar Missão</button>
+                 <a href="https://www.linkedin.com/in/leonardobora/" target="_blank" class="btn btn-linkedin">
+                     <i class="fab fa-linkedin"></i> Deixe seu feedback! </a>
+                 <button id="supportBtn" class="btn btn-support">
+                     <i class="fas fa-mug-hot"></i> Apoie o Criador </button>
+            </div>
+        </div>
+
+        <div id="gameArea" class="hidden">
+            <div class="game-header">
+                <h1 class="game-title-header">Comandante de Prompt</h1>
+                <div class="game-stats">
+                    <div>
+                        <div class="text-green-400">PONTOS: <span id="score" class="transition-all duration-100">0</span></div>
+                        <div class="text-yellow-400">VIDAS: <span id="lives">5</span></div>
+                    </div>
+                    <button id="muteBtn" title="Ativar/Desativar Som">
+                        <i class="fas fa-volume-up"></i>
+                        <i class="fas fa-volume-mute"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="levelSelectionArea" class="mb-4 hidden">
+                <label for="levelSelect" class="block mb-1 text-fuchsia-400">Selecione a Zona de Missão:</label>
+                <select id="levelSelect" class="w-full"></select>
+            </div>
+
+            <div id="challengeScreen" class="content-screen mb-4 p-3 border-2 border-cyan-400 bg-black bg-opacity-20 rounded hidden">
+                <h2 class="text-base sm:text-lg text-fuchsia-400 mb-2">Novo Desafio!</h2>
+                <p class="text-green-400 mb-1">SITUAÇÃO:</p>
+                <p id="scenarioText" class="mb-3 h-20 overflow-y-auto no-scrollbar p-1 border border-gray-600 rounded bg-black bg-opacity-25">Selecione uma zona de missão para começar...</p>
+                <p class="text-red-400 mb-1">PROMPT FRACO DETECTADO:</p>
+                <p id="weakPromptText" class="text-yellow-400 mb-3 h-12 overflow-y-auto no-scrollbar p-1 border border-gray-600 rounded bg-black bg-opacity-25"></p>
+                <div class="mt-auto"> <label for="userPrompt" class="block mb-1 text-cyan-400">Insira o Prompt Melhorado:</label>
+                    <textarea id="userPrompt" rows="4" class="w-full mb-3" placeholder="Reescreva o prompt aqui..."></textarea>
+                    <button id="submitBtn" class="btn w-full" disabled>Acionar Propulsores! (Enviar)</button>
+                </div>
+            </div>
+
+            <div id="resultsScreen" class="content-screen feedback-area hidden rounded">
+                 <div>
+                     <h3 id="resultTitle" class="text-base text-center mb-3">Analisando...</h3>
+                     <div id="feedbackOutput" class="text-xs max-h-48 overflow-y-auto no-scrollbar mb-4 p-2"></div>
+                 </div>
+                 <div class="text-center mt-auto pt-3">
+                      <button id="launchGeminiBtn" class="btn btn-launch hidden mb-4">Abrir no Gemini!</button>
+                      <div class="flex justify-center space-x-4">
+                          <button id="tryAgainBtn" class="btn btn-alt">Tentar Novamente</button>
+                          <button id="nextChallengeBtn" class="btn btn-primary">Próximo Desafio</button>
+                      </div>
+                 </div>
+            </div>
+        </div> <div id="gameOverScreen" class="text-center p-6 hidden content-screen justify-center items-center">
+             <h2 class="text-2xl text-red-500 mb-4">FIM DE JOGO!</h2>
+             <p class="text-lg mb-4">Pontuação Final: <span id="finalScore" class="text-yellow-400">0</span></p>
+             <button id="restartBtn" class="btn">Reiniciar Missão</button>
+         </div>
+
+        <div id="winScreen" class="text-center p-6 hidden content-screen justify-center items-center relative">
+             <h2 class="text-2xl text-green-400 mb-2">MISSÃO COMPLETA!</h2>
+             <p class="text-lg mb-4 text-cyan-400">Zona Concluída: <span id="clearedZoneName"></span></p>
+             <div class="h-24 w-full absolute bottom-16 left-0 flex justify-center items-end pointer-events-none">
+                 <span id="missile" class="">🚀</span>
+             </div>
+             <button id="playAgainBtn" class="btn mt-24">Jogar Novamente (Reiniciar)</button>
+         </div>
+
+
+        <p class="text-xs text-center text-gray-500 mt-4">
+            Baseado em <a href="https://services.google.com/fh/files/misc/gemini-for-google-workspace-prompting-guide-101.pdf" target="_blank" class="text-cyan-400 hover:underline" title="Link para PDF (exemplo)">"Guia de Prompting 101"</a>.
+        </p>
+    </div> <div id="geminiModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="closeGeminiModalBtn" class="modal-close-btn">X</button>
+            <h3 class="text-lg text-fuchsia-400 mb-3">Liberado para Lançamento!</h3>
+            <p class="text-xs mb-4 leading-relaxed">
+                Comandante de Prompt, você está liberado para o lançamento! Copie o prompt inicial abaixo, depois abra o Gemini, cole-o lá e descubra novos mundos!
+            </p>
+            <div id="modalPromptDisplay" class="no-scrollbar"></div>
+            <div class="flex justify-center space-x-4 mt-4">
+                <button id="copyPromptBtn" class="btn btn-secondary">Copiar Prompt</button>
+                <a href="https://gemini.google.com/app" target="_blank" id="launchGeminiLink" class="btn btn-launch">Abrir Gemini</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="supportModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="closeSupportModalBtn" class="modal-close-btn">X</button>
+            <h3 class="text-lg mb-3">Apoie o Criador! <i class="fas fa-mug-hot"></i></h3>
+            <p class="text-xs mb-4 leading-relaxed">
+                Gostou do Comandante de Prompt? Considere apoiar o desenvolvimento com uma pequena contribuição via Pix! Sua ajuda mantém o projeto vivo e permite criar mais ferramentas educativas como esta.
+            </p>
+            <p class="text-sm font-bold">Chave Pix Aleatória:</p>
+            <div id="supportKey">[COLE SUA CHAVE PIX ALEATÓRIA AQUI]</div>
+             <p class="text-xs mt-4 leading-relaxed">
+                Qualquer valor é bem-vindo. Muito obrigado pelo seu apoio!
+            </p>
+             <button id="copySupportKeyBtn" class="btn btn-secondary mt-4">Copiar Chave Pix</button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Pontos de Feedback Padrão ---
+        const defaultFeedbackPoints = {
+            persona: "Seu prompt especifica um papel ou perspectiva (ex: 'Como um gerente...', 'Você é...', 'Aja como...')?",
+            task: "O verbo de ação principal está claro e direto (ex: 'Resuma', 'Rascunhe', 'Liste', 'Compare', 'Gere', 'Crie')?",
+            context: "Você forneceu detalhes de fundo suficientes (ex: tópico, @documento_fonte, público-alvo, objetivo principal)?",
+            format: "Você sugeriu um formato de saída desejado (ex: 'tabela', 'e-mail', 'lista de tópicos', 'parágrafo', 'json')?",
+            specificity: "Restrições ou detalhes específicos estão incluídos (ex: limite de palavras/itens, tom desejado, elementos-chave obrigatórios)?",
+            length: "O prompt é detalhado o suficiente (~10+ palavras geralmente é melhor)? Prompts muito curtos podem ser vagos."
+        };
+
+        // --- Dados do Jogo ---
+        const gameData = {
+            "Princípios Gerais": [
+                { scenario: "Um longo relatório de vendas trimestral precisa de um resumo rápido (principais descobertas, tendências, ações) para uma reunião executiva.", weakPrompt: "resumir relatório vendas", examplePrompt: "Como gerente de vendas, preciso de um resumo executivo do relatório de vendas do T3 anexado (@Relatorio Vendas T3.docx). Apresente as principais descobertas, tendências e itens de ação como um parágrafo curto seguido por 3-5 marcadores (bullet points). O público é a diretoria, então mantenha o tom formal e conciso.", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Precisa de ideias de atividades de team-building para 50 pessoas com interesses diversos (cozinhar, esportes, ler).", weakPrompt: "ideias team building", examplePrompt: "Aja como um planejador de eventos corporativos. Brainstorm 5 ideias diversas de atividades de team-building adequadas para um departamento de 50 pessoas. As atividades devem atender a interesses variados como culinária, esportes, leitura, e ser viáveis para um evento de meio dia. Apresente as ideias como uma lista numerada com uma breve descrição e benefício de cada uma.", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Você tem um bloco de texto explicando um conceito técnico complexo. Torne-o compreensível para um público não técnico.", weakPrompt: "explique isso melhor", examplePrompt: "Como um comunicador científico, reescreva a seguinte explicação técnica de 'emaranhamento quântico' em linguagem simples e não técnica, adequada para um público leigo (ex: estudantes do ensino médio). Evite jargões e use analogias, se útil. O tamanho alvo é de cerca de dois parágrafos:\n\n[Cole o texto técnico aqui]", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Você precisa mudar o tom de um parágrafo de informal para formal.", weakPrompt: "tornar formal", examplePrompt: "Aja como um editor profissional. Reescreva o parágrafo seguinte em um tom formal e profissional, adequado para um relatório de negócios. Substitua gírias, contrações e linguagem casual:\n\n'E aí galera, temos que terminar os slides o mais rápido possível! É super importante arrasarmos nessa apresentação para os chefões na semana que vem. Vlw!'", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Resuma uma longa thread de e-mails em principais itens de ação e prazos.", weakPrompt: "resumir ações thread email", examplePrompt: "Como um assistente virtual eficiente, leia esta thread de e-mails (@Thread Projeto X) e extraia todos os itens de ação acordados. Para cada item de ação, liste o responsável (se mencionado) e o prazo (se mencionado). Apresente a saída como uma lista de marcadores (bullet points) clara e organizada.", feedbackPoints: defaultFeedbackPoints }
+            ],
+            "Suporte Administrativo": [
+                { scenario: "Planejar um offsite de 3 dias em DC para nova equipe de marketing (conteúdo, digital, produto). Objetivo: integração e estratégia.", weakPrompt: "planejar agenda viagem dc", examplePrompt: "Sou um administrador executivo de um diretor de equipe. Nossa equipe recém-formada (marketing de conteúdo, digital, produto) fará um offsite de 3 dias em Washington, DC. O objetivo é integração e planejamento estratégico. Crie uma agenda detalhada para os 3 dias, incluindo atividades de team bonding (manhã dia 1, tarde dia 2) e blocos de trabalho estratégico (tarde dia 1, manhã dia 2, manhã dia 3). Sugira locais ou tipos de atividades específicas para DC.", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Viagem de 2 dias do gerente para Chicago (hospedagem no Peninsula). Encontre locais próximos para café da manhã/jantar (3 de cada, <10min a pé) e 1 opção de entretenimento.", weakPrompt: "achar comida chicago peninsula", examplePrompt: "Aja como um concierge de hotel 5 estrelas. Meu gerente ficará no The Peninsula Chicago por duas noites (datas X e Y). Sugira 3 opções diferentes para café da manhã e 3 para jantar, todas a menos de 10 minutos a pé do hotel, com variedade de culinária e preço. Além disso, encontre uma opção de entretenimento próxima (ex: museu, teatro, atração arquitetônica). Apresente em formato de tabela com nome, tipo de culinária/atividade, distância estimada e breve descrição.", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Resuma os e-mails não lidos do seu gerente da última semana.", weakPrompt: "resumir emails gerente", examplePrompt: "Como meu assistente executivo, verifique minha caixa de entrada e resuma os e-mails recebidos de 'gerente@exemplo.com' nos últimos 7 dias. Foque em solicitações urgentes, decisões chave mencionadas ou itens que exigem minha resposta imediata. Liste os resumos por e-mail, indicando remetente e assunto.", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Rascunhe uma resposta de e-mail usando informações de um documento específico (@arquivo).", weakPrompt: "responder usando @arquivo", examplePrompt: "Preciso responder ao último e-mail de 'colega@exemplo.com' sobre o 'Planejamento T3'. Use as informações do documento @[Rascunho_Plano_T3_v2.docx], especificamente a seção sobre o cronograma atualizado da fase 1, para redigir a resposta. Mantenha um tom profissional e colaborativo.", feedbackPoints: defaultFeedbackPoints },
+                { scenario: "Rascunhe um e-mail para agendar uma reunião com múltiplos stakeholders.", weakPrompt: "agendar reuniao time", examplePrompt: "Como coordenador de projetos, rascunhe um e-mail para 'ana@exemplo.com', 'ben@exemplo.com' e 'carlos@exemplo.com'. O objetivo é agendar uma reunião de 45 minutos na próxima semana (terça ou quarta) para discutir o 'Kickoff do Redesign do Site'. Proponha três horários específicos (ex: Ter 10h, Ter 14h, Qua 11h BRT) e peça a disponibilidade deles ou sugestões alternativas. Inclua o objetivo da reunião no corpo do e-mail.", feedbackPoints: defaultFeedbackPoints }
+            ],
+             "Marketing": [
+                 { scenario: "Criar 3 variações de anúncios para redes sociais para novos produtos de limpeza ecológicos, visando millennials.", weakPrompt: "anuncios limpeza eco", examplePrompt: "Sou um gerente de marketing digital. Para nossa nova linha de produtos de limpeza ecológicos (foco: millennials conscientes), gere três variações distintas de texto de anúncio para Instagram e Facebook. Cada variação deve ter: 1) Headline chamativa, 2) Corpo do texto (~2 frases, destacando benefícios como 'baseado em plantas', 'cruelty-free', 'embalagem reciclada', 'limpeza eficaz'), 3) CTA claro (ex: 'Compre Agora', 'Saiba Mais', 'Mude para o Verde'). Tom: animado, informativo e confiável.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Gerar 5 slogans curtos e cativantes (menos de 8 palavras) para um novo aplicativo de rastreamento de hábitos de leitura para leitores ávidos.", weakPrompt: "slogans app leitura", examplePrompt: "Aja como um redator publicitário criativo. Gere 5 opções de slogans cativantes para um novo aplicativo móvel que ajuda usuários a rastrear hábitos de leitura e descobrir livros. Público: leitores ávidos de todas as idades. Requisitos: menos de 8 palavras, memorável, evocar descoberta literária ou organização. Apresente como lista.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Desenvolver um conceito de identidade visual (ideias de logo) para uma cafeteria e lan house ('game cafe').", weakPrompt: "ideias logo game cafe", examplePrompt: "Como designer de marca, gere conceitos de logo para um novo negócio combinando cafeteria e 'game cafe' (nome provisório: 'Pixel Perk Cafe'). Considere a dualidade (café/jogos). Público: gamers e amantes de café. Forneça 2 exemplos de conceito (descrição visual) para cada estilo: 'Retrô (Arcade)' e 'Moderno/Minimalista'.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Realizar pesquisa de mercado sobre tendências emergentes na indústria [específica, ex: 'de alimentos para pets'].", weakPrompt: "tendencias comida pet", examplePrompt: "Como analista de mercado, pesquise relatórios e artigos recentes (últimos 12 meses) sobre a indústria de 'alimentos sustentáveis para pets'. Identifique e resuma as 3 principais tendências emergentes relacionadas a: 1) Preferências do consumidor (ingredientes, origem), 2) Embalagens ecológicas, 3) Inovações em proteínas alternativas. Explique brevemente o impacto potencial de cada tendência.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Desenvolver personas de público com base em pesquisa para um novo aplicativo de fitness.", weakPrompt: "personas app fitness", examplePrompt: "Aja como um pesquisador de UX. Desenvolva duas personas de usuário distintas para um novo aplicativo de fitness voltado para profissionais ocupados (25-40 anos). Use dados de @[Pesquisa_Usuarios_Fitness.pdf] se disponível, ou crie baseado em pesquisa geral. Inclua para cada persona: Nome Fictício, Idade, Ocupação, Metas de Fitness (ex: perder peso, aliviar estresse, ganhar força), Maiores Dificuldades (ex: falta de tempo, motivação, acompanhamento), Nível de Habilidade Tecnológica e Canais de Comunicação Preferidos (ex: app, email, redes sociais). Formate como perfis separados.", feedbackPoints: defaultFeedbackPoints }
+             ],
+             "Comunicações": [
+                 { scenario: "Rascunhar um comunicado de imprensa anunciando a aquisição de uma empresa.", weakPrompt: "press release aquisicao", examplePrompt: "Sou gerente de Relações Públicas. Rascunhe um comunicado de imprensa (formato padrão: título, data, introdução, corpo, citações, sobre as empresas, contato) anunciando que [Nossa Empresa S.A.] adquiriu [Empresa Adquirida Ltda.]. Inclua citações (placeholders) do nosso CEO [Nome CEO 1] e do CEO deles [Nome CEO 2]. Mencione os benefícios estratégicos da aquisição para clientes e o mercado. Use informações de @[Termos_Aquisicao.docx] se aplicável.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Preparar pontos de discussão para o briefing de mídia de um porta-voz sobre o lançamento de um novo produto.", weakPrompt: "preparar briefing porta-voz", examplePrompt: "Como assessor de imprensa, gere um resumo com 3-4 pontos chave (talking points) para preparar nosso porta-voz [Nome Porta-voz] para um briefing de mídia sobre o lançamento do [Nome do Produto]. Os pontos devem cobrir: 1) O que é o produto (breve descrição), 2) Seu principal benefício/diferencial, 3) O público-alvo principal, 4) Disponibilidade/Preço (se aplicável). Linguagem clara, concisa e positiva.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Gerar perguntas simuladas de entrevista (mistura de fáceis/difíceis) para um porta-voz.", weakPrompt: "perguntas entrevista simulada", examplePrompt: "Sou gerente de RP preparando [Nome Porta-voz] para entrevistas sobre nossa nova iniciativa [Nome Iniciativa/Produto]. Gere 5 perguntas simuladas de entrevista. Inclua 2 perguntas básicas sobre a iniciativa e 3 perguntas mais desafiadoras sobre possíveis críticas, concorrência ou planos futuros. Indique o nível de dificuldade (fácil/difícil) para cada pergunta.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Rascunhar um company-wide memo anunciando uma nova iniciativa interna (ex: lançamento da intranet).", weakPrompt: "rascunho memo interno", examplePrompt: "Como gerente de comunicação interna, rascunhe um memorando otimista para toda a empresa anunciando o lançamento do nosso novo portal da intranet em [Data]. Destaque 2-3 melhorias chave baseadas no feedback dos funcionários (ex: busca aprimorada, acesso móvel, diretório de funcionários atualizado). Explique o objetivo (ex: melhorar comunicação e colaboração) e forneça o link. Mantenha conciso (2-3 parágrafos) e com tom engajador.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Organizar informações de contato de mídia/analistas para um briefing.", weakPrompt: "organizar lista contatos", examplePrompt: "Aja como um organizador de dados. Organize a seguinte lista de contatos (ou use @[Lista_Contatos_Midia.xlsx]) em uma tabela formatada para rastrear o outreach de um briefing de produto. Colunas necessárias: Nome, Veículo/Empresa, Tipo (Analista/Jornalista), Área de Cobertura, Prioridade (Alta/Média/Baixa), Status do Convite (Convidado/Confirmado/Recusado/Pendente).\n\n[Cole a lista aqui ou confirme o uso do arquivo @]", feedbackPoints: defaultFeedbackPoints }
+             ],
+             "Atendimento ao Cliente": [
+                 { scenario: "Rascunhar uma resposta de e-mail empática para uma reclamação de cliente sobre mercadoria danificada.", weakPrompt: "email mercadoria danificada", examplePrompt: "Sou um representante de atendimento ao cliente (SAC). Rascunhe um e-mail empático respondendo a [Nome Cliente] sobre o pedido nº [Num Pedido] (fones de ouvido) que chegou danificado. Reconheça a frustração, confirme o envio de um novo produto (informar código de rastreio se tiver) e ofereça [resolução específica, ex: frete expresso grátis no novo envio OU um cupom de 15% para próxima compra] pelo inconveniente. Tom: compreensivo e resolutivo.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Responder a uma pergunta complexa de cliente usando informações de múltiplos documentos de FAQ.", weakPrompt: "responder pergunta complexa faq", examplePrompt: "Aja como um especialista de suporte. Um cliente perguntou sobre a [política de devolução] para [tipo de produto específico, ex: eletrônicos] e também sobre a [certificação específica, ex: certificação Anatel] do mesmo. Use informações dos documentos @[Politica_Devolucao.pdf] e @[Especificacoes_Tecnicas.pdf] para redigir uma resposta clara e completa. Combine as informações de forma lógica e mantenha um tom prestativo e profissional.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Criar um modelo padronizado para um e-mail de desculpas.", weakPrompt: "modelo email desculpas", examplePrompt: "Como supervisor de SAC, crie um modelo (template) para um e-mail de desculpas padrão. Inclua placeholders claros para: [Nome do Cliente], [Descrição Concisa do Problema], [Ação Corretiva Tomada] e [Compensação Oferecida, se aplicável]. O tom deve ser sincero, empático e focado na resolução. Mantenha conciso (um parágrafo principal).", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Rascunhar perguntas de pesquisa para medir a satisfação do cliente após uma interação de suporte.", weakPrompt: "perguntas pesquisa cliente", examplePrompt: "Como analista de experiência do cliente, gere 5 perguntas breves para uma pesquisa de satisfação pós-atendimento (via chat/telefone). As perguntas devem medir (use escalas quando apropriado): 1) Resolução do problema (Sim/Não/Parcialmente), 2) Clareza e cordialidade do agente (Escala 1-5), 3) Facilidade em obter ajuda (Escala 1-5), 4) Satisfação geral com o atendimento (Escala 1-5), 5) Probabilidade de recomendar (NPS 0-10).", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Rascunhar um e-mail pedindo uma ligação de acompanhamento com um cliente insatisfeito.", weakPrompt: "pedido ligacao cliente insatisfeito", examplePrompt: "Aja como um gerente de contas sênior. Rascunhe um e-mail educado para [Nome Cliente], que deu um feedback negativo sobre [Serviço/Pedido nº] em [Data]. Expresse pesar pela experiência, afirme o desejo de entender melhor a preocupação e solicite uma breve ligação de acompanhamento. Ofereça 2-3 horários potenciais na próxima semana (ex: Ter 14h, Qua 10h). Tom: proativo e focado na solução.", feedbackPoints: defaultFeedbackPoints }
+             ],
+             "Executivos": [
+                 { scenario: "CEO precisa de um esboço de apresentação para um próximo evento da indústria.", weakPrompt: "esboco apresentacao ceo", examplePrompt: "Aja como meu chefe de gabinete. Crie um esboço detalhado (formato de tópicos e subtópicos) para minha apresentação de 30 minutos como CEO na conferência [Nome do Evento]. Público: [Tipo de Público, ex: investidores e analistas]. Tópicos principais a cobrir: [Visão de Mercado], [Nossa Estratégia de Inovação], [Estudo de Caso de Sucesso Recente]. Inclua placeholders para: Abertura (1 min), Slide Chave Tópico 1 (7 min), Slide Chave Tópico 2 (7 min), Slide Chave Tópico 3 (7 min), Conclusão e Chamada para Ação (3 min), Q&A (5 min).", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "COO precisa se preparar para perguntas potencialmente difíceis de funcionários em uma reunião geral (town hall).", weakPrompt: "preparar coo q&a town hall", examplePrompt: "Sou o COO e farei um town hall sobre [Anúncio/Mudança Recente, ex: reestruturação do departamento X]. Para me preparar para o Q&A, gere 3 perguntas desafiadoras que os funcionários podem fazer sobre este tópico. Para cada pergunta, sugira uma resposta concisa (2-3 frases) que seja empática, transparente (dentro do possível) e firme, reforçando a lógica/necessidade da decisão.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "CMO precisa de pesquisa de mercado sobre os interesses do público-alvo para o planejamento anual.", weakPrompt: "pesquisa mercado cmo", examplePrompt: "Como diretor de estratégia de marketing, preciso de informações para o planejamento anual da nossa linha de [categoria de produto, ex: moda sustentável]. Defina o público-alvo primário: [Demo do Público, ex: mulheres 25-40, classe AB, eco-conscientes]. Pesquise e liste: 1) Top 3 interesses/valores relacionados (ex: slow fashion, marcas éticas, minimalismo), 2) Top 2 canais de marketing onde se engajam (ex: Instagram, blogs de nicho, Pinterest), 3) 1 tendência atual que influencia suas compras nesta categoria.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "CIO/CTO precisa explicar um conceito técnico (e.g., Generative AI) de forma simples para o conselho.", weakPrompt: "explicar ia gen simples", examplePrompt: "Aja como um consultor de comunicação técnica. Preciso explicar 'IA Generativa' para o conselho de administração (não técnicos). Primeiro, escreva uma explicação muito simples do conceito (2-3 frases, use uma analogia se possível). Depois, liste 3 benefícios potenciais concretos que a IA Generativa poderia trazer para nossa empresa ([Tipo/Indústria da Empresa, ex: varejo online]), focando em resultados de negócios (ex: personalização de experiência, otimização de logística, criação de conteúdo de marketing).", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Executivo precisa rapidamente recusar um convite de reunião enquanto viaja.", weakPrompt: "recusar reuniao celular", examplePrompt: "Estou no aeroporto/em trânsito. Rascunhe um e-mail muito breve e educado para [Remetente] recusando o convite para '[Assunto da Reunião]'. Informe que estou viajando com acesso limitado e entrarei em contato/acompanharei o assunto assim que retornar na próxima semana. Enviar do celular.", feedbackPoints: defaultFeedbackPoints }
+             ],
+             "Gestão de Linha de Frente": [
+                 { scenario: "Associado de varejo precisa encontrar rapidamente detalhes sobre uma promoção em andamento na loja.", weakPrompt: "achar detalhes promocao", examplePrompt: "Preciso de informações sobre a promoção '[Nome da Promoção, ex: Liquida de Inverno]'. Verifique o documento @[Detalhes_Promocoes_Atuais.pdf]. Qual é a porcentagem de desconto para [Categoria de Produto, ex: casacos e jaquetas]? A promoção é válida até quando?", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Líder de equipe precisa enviar e-mail aos colegas resumindo uma nova política da loja encontrada em um documento.", weakPrompt: "email time nova politica", examplePrompt: "Rascunhe um e-mail para a equipe ('Equipe Loja - Turno Manhã') resumindo as principais mudanças na nova política de trocas e devoluções, conforme descrito em @[Politica_Trocas_T3_2024.docx]. Foque em 2-3 pontos chave (ex: prazo para troca, necessidade de nota fiscal, itens sem troca). Mencione a data de início da nova política. Mantenha o tom informativo e direto.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Criar uma checklist para tarefas diárias de abertura/fechamento de uma loja de varejo.", weakPrompt: "checklist tarefas loja", examplePrompt: "Gere um modelo de checklist para as rotinas diárias de abertura e fechamento da loja [Nome da Loja]. Inclua seções separadas para 'Tarefas de Abertura' (ex: desativar alarme, ligar luzes, verificar caixa, repor produtos chave) e 'Tarefas de Fechamento' (ex: limpar áreas comuns, contagem de caixa, trancar portas, ativar alarme). Use formato de caixas de seleção (checkboxes).", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Funcionário de armazém precisa verificar o nível de estoque de um produto específico.", weakPrompt: "checar contagem estoque", examplePrompt: "Verifique a planilha de inventário @[Inventario_Armazem_Atual.xlsx]. Qual a quantidade atual listada como 'disponível' para o produto com SKU '[SKU ou Nome do Produto]'?", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Gerente precisa rascunhar um e-mail sobre uma discrepância na auditoria de estoque.", weakPrompt: "email problema auditoria", examplePrompt: "Rascunhe um breve e-mail para meu supervisor [Nome Supervisor] sobre a auditoria de inventário em andamento. Informe que foram encontradas discrepâncias entre a contagem física e o sistema (@[Planilha_Auditoria_Inventario.xlsx]) para os itens [SKU Item A] e [SKU Item B]. Mencione que estou investigando a causa e atualizarei em breve.", feedbackPoints: defaultFeedbackPoints }
+             ],
+             "Recursos Humanos": [
+                 { scenario: "Rascunhar uma descrição de cargo atraente para uma função específica (ex: Gerente de Marketing).", weakPrompt: "descricao cargo gerente mkt", examplePrompt: "Sou Gerente de RH. Rascunhe uma descrição de cargo (job description) atraente e completa para a posição de 'Gerente de Marketing Digital'. Destaque responsabilidades chave como [gerenciar campanhas de mídia paga], [otimizar SEO/SEM], [analisar métricas e gerar relatórios]. Liste qualificações essenciais, incluindo [5+ anos de experiência em marketing digital], [Graduação em Marketing/Comunicação ou similar], [experiência com ferramentas X e Y]. Inclua uma breve e engajadora visão geral da empresa e sua cultura.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Gerar perguntas de entrevista comportamental para uma função específica.", weakPrompt: "preciso perguntas entrevista", examplePrompt: "Como especialista em recrutamento, gere 5 perguntas de entrevista comportamental para a posição de 'Engenheiro(a) de Software Pleno'. As perguntas devem avaliar competências como: resolução de problemas complexos, trabalho em equipe e colaboração, proficiência técnica (mencionar linguagem se relevante, ex: Java/Spring), adaptabilidade a mudanças e comunicação técnica. Inclua uma pergunta sobre como lidou com um desacordo técnico com um colega.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Criar um esboço para o cronograma de integração da primeira semana de um novo funcionário.", weakPrompt: "esboco cronograma novo contratado", examplePrompt: "Crie um modelo de cronograma (outline) para a primeira semana (Seg-Sex) de um novo funcionário na posição de [Nome da Posição]. Inclua blocos para: Dia 1 (Boas-vindas, documentação RH, configuração de TI, almoço com a equipe, introdução ao gerente), Meio da Semana (treinamentos sobre [Ferramenta A] e [Processo B], 1:1 com o gerente, conhecer colegas chave), Fim da Semana (primeira tarefa/projeto, check-in de feedback, happy hour virtual/presencial). Formato: lista ou tabela simples.", feedbackPoints: defaultFeedbackPoints },
+                 { scenario: "Rascunhar perguntas para uma pesquisa anônima de satisfação dos funcionários.", weakPrompt: "perguntas pesquisa satisfacao", examplePrompt: "Como analista de RH, rascunhe 5 perguntas principais para uma pesquisa anônima de satisfação dos funcionários, focando em: 1) Satisfação geral com o trabalho (escala 1-5), 2) Percepção sobre equilíbrio vida pessoal/profissional (escala 1-5), 3) Oportunidades de aprendizado e desenvolvimento (escala 1-5), 4) Qualidade da comunicação da liderança (escala 1-5), 5) Senso de pertencimento e cultura da equipe (escala 1-5). Considere adicionar um campo para comentários abertos.", feedbackPoints: defaultFeedbackPoints }
+             ]
+         };
+
+        // --- Elementos da UI ---
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const levelSelect = document.getElementById('levelSelect');
+        const levelSelectionArea = document.getElementById('levelSelectionArea');
+        const challengeScreen = document.getElementById('challengeScreen');
+        const scenarioText = document.getElementById('scenarioText');
+        const weakPromptText = document.getElementById('weakPromptText');
+        const userPrompt = document.getElementById('userPrompt');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultsScreen = document.getElementById('resultsScreen');
+        const feedbackOutput = document.getElementById('feedbackOutput');
+        const resultTitle = document.getElementById('resultTitle');
+        const tryAgainBtn = document.getElementById('tryAgainBtn');
+        const nextChallengeBtn = document.getElementById('nextChallengeBtn');
+        const launchGeminiBtn = document.getElementById('launchGeminiBtn');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScore = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+        const winScreen = document.getElementById('winScreen');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const clearedZoneName = document.getElementById('clearedZoneName');
+        const missile = document.getElementById('missile');
+        // Modais
+        const geminiModal = document.getElementById('geminiModal');
+        const closeModalBtn = document.getElementById('closeGeminiModalBtn');
+        const modalPromptDisplay = document.getElementById('modalPromptDisplay');
+        const launchGeminiLink = document.getElementById('launchGeminiLink');
+        const copyPromptBtn = document.getElementById('copyPromptBtn');
+        const supportModal = document.getElementById('supportModal'); // Novo Modal
+        const closeSupportModalBtn = document.getElementById('closeSupportModalBtn'); // Botão fechar novo modal
+        const copySupportKeyBtn = document.getElementById('copySupportKeyBtn'); // Botão copiar chave pix
+        // Telas e Áreas
+        const startScreen = document.getElementById('startScreen');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const supportBtn = document.getElementById('supportBtn'); // Novo Botão Apoiar
+        const gameArea = document.getElementById('gameArea');
+        const backgroundCanvas = document.getElementById('backgroundCanvas');
+        const muteBtn = document.getElementById('muteBtn');
+
+        // --- Estado do Jogo ---
+        let currentZone = null;
+        let currentChallengeIndex = 0;
+        let score = 0;
+        let lives = 5;
+        let currentChallenge = null;
+        let zoneCompletionStatus = {};
+        let backgroundMusicLoop = null;
+        let isMuted = false;
+        let audioInitialized = false;
+
+        // --- Lógica de Áudio (Tone.js) ---
+        let synth, feedbackSynth, sequenceSynth, effectSynth, winSynth, musicSynth;
+        let soundsLoaded = false;
+
+        function initializeAudio() {
+            if (soundsLoaded || typeof Tone === 'undefined') return false; // Retorna false se já carregado ou Tone não existe
+            try {
+                 synth = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.1 } }).toDestination();
+                 feedbackSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.05, sustain: 0.0, release: 0.1 } }).toDestination();
+                 sequenceSynth = new Tone.MembraneSynth({ pitchDecay: 0.08, octaves: 5, envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 0.8 } }).toDestination();
+                 effectSynth = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination();
+                 winSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'sine' }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 } }).toDestination();
+                 musicSynth = new Tone.MonoSynth({
+                    oscillator: { type: 'sawtooth' }, // Alterado para sawtooth para variar
+                    envelope: { attack: 0.1, decay: 0.2, sustain: 0.1, release: 0.8 },
+                    filterEnvelope: { attack: 0.05, decay: 0.1, sustain: 0.1, release: 0.5, baseFrequency: 200, octaves: 4 }
+                 }).toDestination();
+                 const musicDelay = new Tone.PingPongDelay("4n", 0.3).toDestination(); // Aumenta delay
+                 musicSynth.connect(musicDelay);
+
+                 soundsLoaded = true;
+                 console.log("Áudio inicializado com sucesso.");
+                 setupBackgroundMusic();
+                 updateMuteButton();
+                 return true; // Indica sucesso
+            } catch (error) {
+                console.error("Falha na inicialização do Tone.js:", error);
+                soundsLoaded = false;
+                return false; // Indica falha
+            }
+        }
+
+        function setupBackgroundMusic() {
+            if (!soundsLoaded || !musicSynth) return;
+            // Padrão musical mais variado
+            const musicPattern = [
+                "C3", "E3", "G3", "C4", "A3", null, "G3", "E3",
+                "D3", "F3", "A3", "D4", "B3", null, "A3", "F3"
+            ];
+            let step = 0;
+
+            backgroundMusicLoop = new Tone.Loop(time => {
+                let note = musicPattern[step % musicPattern.length];
+                if (note) { // Toca apenas se não for null
+                   musicSynth.triggerAttackRelease(note, "8n", time);
+                }
+                step++;
+            }, "8n"); // Toca a cada colcheia
+
+            Tone.Transport.bpm.value = 100; // Ritmo um pouco mais rápido
+        }
+
+        function toggleBackgroundMusic(play) {
+            if (!soundsLoaded || !backgroundMusicLoop || !Tone.Transport) return;
+            try {
+                 if (play && Tone.Transport.state !== 'started') {
+                     Tone.Transport.start();
+                     backgroundMusicLoop.start(0);
+                     console.log("Música de fundo iniciada.");
+                 } else if (!play && Tone.Transport.state === 'started') {
+                     backgroundMusicLoop.stop();
+                     Tone.Transport.stop();
+                     console.log("Música de fundo parada.");
+                 }
+            } catch(e) {
+                console.error("Erro ao tocar/parar música:", e);
+            }
+        }
+
+        function toggleMute() {
+             if (!soundsLoaded) return;
+             isMuted = !isMuted;
+             try {
+                Tone.Destination.mute = isMuted;
+             } catch(e) {
+                 console.error("Erro ao mutar/desmutar Tone.Destination:", e);
+             }
+             updateMuteButton();
+             console.log(isMuted ? "Áudio Mudo" : "Áudio Ativado");
+        }
+
+        function updateMuteButton() {
+            if (!muteBtn) return;
+            if (isMuted) {
+                muteBtn.classList.add('muted');
+                muteBtn.title = "Ativar Som";
+            } else {
+                muteBtn.classList.remove('muted');
+                muteBtn.title = "Desativar Som";
+            }
+        }
+
+        function playSound(type, note = 'C4', duration = '8n') {
+            if (!soundsLoaded || isMuted || !Tone.context || Tone.context.state !== 'running') return;
+            try {
+                const now = Tone.now();
+                 switch (type) {
+                    case 'submit': synth?.triggerAttackRelease(note, duration, now); break;
+                    case 'correct': feedbackSynth?.triggerAttackRelease('C5', '16n', now); break;
+                    case 'incorrect': feedbackSynth?.triggerAttackRelease('C3', '16n', now); break;
+                    case 'perfect':
+                         if (sequenceSynth) {
+                             sequenceSynth.triggerAttackRelease("C4", "8n", now);
+                             sequenceSynth.triggerAttackRelease("E4", "8n", now + 0.15);
+                             sequenceSynth.triggerAttackRelease("G4", "8n", now + 0.3);
+                             sequenceSynth.triggerAttackRelease("C5", "8n", now + 0.45);
+                         }
+                         break;
+                    case 'gameOver': sequenceSynth?.triggerAttackRelease('C3', '4n', now); break;
+                    case 'levelWin': winSynth?.triggerAttackRelease(["C4", "E4", "G4"], "2n", now); break;
+                    case 'lifeLost': effectSynth?.triggerAttackRelease('16n', now); break;
+                    case 'select': feedbackSynth?.triggerAttackRelease('E4', '16n', now); break;
+                    case 'buttonClick': feedbackSynth?.triggerAttackRelease('G4', '32n', now); break;
+                    default: console.warn(`Tipo de som desconhecido: ${type}`);
+                }
+            } catch (error) {
+                console.error(`Erro ao tocar som "${type}":`, error);
+            }
+        }
+
+        // --- Funções do Jogo ---
+
+        function updateScore(change) {
+            score = Math.max(0, score + change);
+            scoreDisplay.textContent = score;
+            scoreDisplay.classList.add('score-animating');
+            setTimeout(() => scoreDisplay.classList.remove('score-animating'), 150);
+        }
+
+        function loseLife() {
+            lives--;
+            livesDisplay.textContent = lives;
+            playSound('lifeLost');
+            livesDisplay.parentElement.classList.add('flash-fail');
+            setTimeout(() => livesDisplay.parentElement.classList.remove('flash-fail'), 500);
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+
+        function loadLevel(zoneName) {
+            if (!gameData[zoneName]) return;
+            currentZone = zoneName;
+            currentChallengeIndex = 0;
+            currentChallenge = gameData[currentZone][currentChallengeIndex];
+            if (!currentChallenge) {
+                 showScreen('levelSelection');
+                 levelSelect.value = "";
+                 alert("Erro ao carregar desafios.");
+                 return;
+            }
+            userPrompt.value = '';
+            submitBtn.disabled = false;
+            userPrompt.disabled = false;
+            displayChallenge();
+            showScreen('challenge');
+            playSound('select', 'C4');
+        }
+
+        function displayChallenge() {
+            if (!currentChallenge) {
+                 showScreen('levelSelection');
+                 levelSelect.value = "";
+                 return;
+            }
+            scenarioText.textContent = currentChallenge.scenario;
+            weakPromptText.textContent = `"${currentChallenge.weakPrompt}"`;
+            userPrompt.value = '';
+            userPrompt.focus();
+            feedbackOutput.innerHTML = '';
+            resultTitle.textContent = 'Analisando...';
+            launchGeminiBtn.classList.add('hidden');
+            nextChallengeBtn.disabled = true;
+            tryAgainBtn.disabled = true;
+        }
+
+        function evaluatePrompt() {
+             const userText = userPrompt.value.trim();
+             if (!currentChallenge || userText === '') {
+                feedbackOutput.innerHTML = `<div class="feedback-item feedback-critical">Por favor, insira um prompt melhorado antes de enviar.</div>`;
+                playSound('incorrect');
+                return;
+            }
+
+            playSound('submit');
+            submitBtn.disabled = true;
+            userPrompt.disabled = true;
+            resultTitle.textContent = 'Analisando...';
+            resultTitle.className = 'text-base text-center mb-3 text-yellow-400';
+            feedbackOutput.innerHTML = '<div class="text-center p-4">🚀 Processando seu super prompt...</div>';
+            showScreen('results');
+
+            setTimeout(() => {
+                 const userTextLower = userText.toLowerCase();
+                 const feedbackPoints = currentChallenge.feedbackPoints || defaultFeedbackPoints;
+                 let currentScore = 0;
+                 let maxScore = 0;
+                 let feedbackHTML = '';
+                 let perfectScore = true;
+
+                 const feedbackNames = {
+                     persona: "Persona", task: "Tarefa", context: "Contexto",
+                     format: "Formato", specificity: "Especificidade", length: "Tamanho"
+                 };
+
+                 const regexPatterns = {
+                     persona: /\b(como um|como uma|sou um|sou uma|você é|aja como|imagine que você é|na perspectiva de)\b/i,
+                     task: /\b(resuma|liste|rascunhe|compare|gere|crie|escreva|defina|explique|analise|sugira|traduza|calcule)\b/i,
+                     context: /@\S+|@[^\s]+|\b(objetivo|público|contexto|cenário|baseado em|considerando|sobre)\b/i,
+                     format: /\b(tabela|e-mail|tópicos|parágrafo|lista|json|markdown|código|script|poema|resumo|diálogo)\b/i,
+                     specificity: /\d+|\b(tom|limite|máximo|exatamente|específico|detalhes|inclua|evite|restrinja|foco em)\b/i,
+                     length: null
+                 };
+
+                 for (const key in feedbackPoints) {
+                     maxScore += 10;
+                     let satisfied = false;
+                     let feedbackText = feedbackPoints[key];
+
+                     try {
+                         if (key === 'length') {
+                             satisfied = userText.split(/\s+/).filter(Boolean).length >= 10;
+                         } else if (regexPatterns[key]) {
+                             satisfied = regexPatterns[key].test(userText);
+                         }
+                     } catch (e) {
+                         console.error(`Erro ao avaliar critério ${key}:`, e);
+                         satisfied = false;
+                     }
+
+                     if (satisfied) {
+                         currentScore += 10;
+                         feedbackHTML += `<div class="feedback-item feedback-good">✅ ${feedbackNames[key] || key}: ${feedbackText}</div>`;
+                     } else {
+                         perfectScore = false;
+                         feedbackHTML += `<div class="feedback-item feedback-critical">❌ ${feedbackNames[key] || key}: ${feedbackText}</div>`;
+                     }
+                 }
+
+                 if (userText.split(/\s+/).filter(Boolean).length > 25 && perfectScore) {
+                    feedbackHTML += `<div class="feedback-item feedback-bonus">⭐ BÔNUS: Prompt bem detalhado! +5 Pontos!</div>`;
+                    currentScore += 5;
+                 }
+
+                 feedbackOutput.innerHTML = feedbackHTML;
+                 updateScore(currentScore);
+
+                 let titleClass = 'text-base text-center mb-3';
+                 if (perfectScore) {
+                     resultTitle.textContent = "MISSÃO PERFEITA!";
+                     titleClass += ' text-fuchsia-400 flash-perfect';
+                     playSound('perfect');
+                     prepareNextChallenge(true);
+                 } else if (currentScore >= maxScore * 0.6) {
+                     resultTitle.textContent = "SUCESSO PARCIAL!";
+                     titleClass += ' text-green-400 flash-success';
+                     playSound('correct');
+                     prepareNextChallenge(true);
+                 } else {
+                     resultTitle.textContent = "FALHA NA MISSÃO!";
+                     titleClass += ' text-red-400 flash-fail';
+                     playSound('incorrect');
+                     loseLife();
+                     prepareNextChallenge(false);
+                 }
+                 resultTitle.className = titleClass;
+
+                 tryAgainBtn.disabled = false;
+                 nextChallengeBtn.disabled = !(lives > 0 && (perfectScore || currentScore >= maxScore * 0.6));
+
+                 if (perfectScore || currentScore >= maxScore * 0.6) {
+                    setupGeminiLaunch();
+                    launchGeminiBtn.classList.remove('hidden');
+                 } else {
+                     launchGeminiBtn.classList.add('hidden');
+                 }
+
+                 setTimeout(() => {
+                     resultTitle.classList.remove('flash-perfect', 'flash-success', 'flash-fail');
+                 }, 1800);
+
+            }, 1000 + Math.random() * 500);
+        }
+
+        function prepareNextChallenge(success) {
+            if (success && lives > 0) {
+                currentChallengeIndex++;
+                if (currentChallengeIndex >= gameData[currentZone].length) {
+                    zoneCompletionStatus[currentZone] = true;
+                    updateLevelSelectOptions();
+                    if (allZonesCompleted()) {
+                        winGame();
+                    } else {
+                        winZone();
+                    }
+                } else {
+                    currentChallenge = gameData[currentZone][currentChallengeIndex];
+                }
+            }
+        }
+
+        function winZone() {
+             clearedZoneName.textContent = currentZone;
+             showScreen('win');
+             playSound('levelWin');
+             missile.style.opacity = '1';
+             missile.classList.add('animate-missile');
+             setTimeout(() => {
+                  missile.classList.remove('animate-missile');
+                  missile.style.opacity = '0';
+             }, 1500);
+             levelSelect.disabled = true;
+             submitBtn.disabled = true;
+             userPrompt.disabled = true;
+             playAgainBtn.textContent = "Próxima Zona / Reiniciar";
+        }
+
+        function winGame() {
+             clearedZoneName.textContent = "TODAS AS ZONAS!";
+             showScreen('win');
+             playSound('levelWin');
+             missile.style.opacity = '1';
+             missile.classList.add('animate-missile');
+             setTimeout(() => {
+                 missile.classList.remove('animate-missile');
+                 missile.style.opacity = '0';
+             }, 1500);
+             levelSelect.disabled = true;
+             submitBtn.disabled = true;
+             userPrompt.disabled = true;
+             playAgainBtn.textContent = "Jogar Novamente (Reset)";
+        }
+
+        function nextChallenge() {
+            playSound('buttonClick');
+             if (lives <= 0) {
+                 gameOver();
+                 return;
+             }
+            if (currentZone && currentChallenge && currentChallengeIndex < gameData[currentZone].length) {
+                 displayChallenge();
+                 showScreen('challenge');
+                 submitBtn.disabled = false;
+                 userPrompt.disabled = false;
+            } else {
+                 showScreen('levelSelection');
+            }
+        }
+
+        function tryAgain() {
+             playSound('buttonClick');
+             if (lives <= 0) {
+                 gameOver();
+                 return;
+             }
+             showScreen('challenge');
+             userPrompt.value = '';
+             submitBtn.disabled = false;
+             userPrompt.disabled = false;
+             userPrompt.focus();
+        }
+
+        function gameOver() {
+            finalScore.textContent = score;
+            showScreen('gameOver');
+            playSound('gameOver');
+            toggleBackgroundMusic(false);
+        }
+
+         function restartGame() {
+             playSound('buttonClick', 'C3');
+             score = 0;
+             lives = 5;
+             currentZone = null;
+             currentChallengeIndex = 0;
+             currentChallenge = null;
+             zoneCompletionStatus = {};
+             // Reinicia a UI do jogo principal
+             if(scoreDisplay) scoreDisplay.textContent = score;
+             if(livesDisplay) livesDisplay.textContent = lives;
+             if(userPrompt) userPrompt.value = '';
+             if(feedbackOutput) feedbackOutput.innerHTML = '';
+             populateLevelSelect();
+             showScreen('levelSelection'); // Mostra seleção de nível ao reiniciar
+             toggleBackgroundMusic(true); // Reinicia a música (se o áudio estiver ok)
+         }
+
+         function allZonesCompleted() {
+            const totalZones = Object.keys(gameData).length;
+            if (totalZones === 0) return false;
+            const completedZones = Object.keys(zoneCompletionStatus).filter(zone => zoneCompletionStatus[zone]).length;
+            return completedZones === totalZones;
+         }
+
+        // Gerencia qual tela é exibida
+        function showScreen(screenName) {
+             startScreen.classList.add('hidden');
+             gameArea.classList.add('hidden');
+             gameOverScreen.classList.add('hidden');
+             winScreen.classList.add('hidden');
+             levelSelectionArea.classList.add('hidden');
+             challengeScreen.classList.add('hidden');
+             resultsScreen.classList.add('hidden');
+
+             switch(screenName) {
+                 case 'start':
+                     startScreen.classList.remove('hidden');
+                     toggleBackgroundMusic(false); // Garante que música não toque na tela inicial
+                     break;
+                 case 'levelSelection':
+                     gameArea.classList.remove('hidden');
+                     levelSelectionArea.classList.remove('hidden');
+                     challengeScreen.classList.add('hidden');
+                     resultsScreen.classList.add('hidden');
+                     levelSelect.disabled = false;
+                     levelSelect.value = "";
+                     submitBtn.disabled = true;
+                     userPrompt.disabled = true;
+                     scenarioText.textContent = "Selecione uma zona de missão para começar...";
+                     weakPromptText.textContent = '';
+                     currentChallenge = null;
+                     currentZone = null;
+                     break;
+                 case 'challenge':
+                     gameArea.classList.remove('hidden');
+                     levelSelectionArea.classList.remove('hidden');
+                     challengeScreen.classList.remove('hidden');
+                     break;
+                 case 'results':
+                     gameArea.classList.remove('hidden');
+                     levelSelectionArea.classList.remove('hidden');
+                     resultsScreen.classList.remove('hidden');
+                     break;
+                 case 'gameOver':
+                     gameOverScreen.classList.remove('hidden');
+                     break;
+                 case 'win':
+                     winScreen.classList.remove('hidden');
+                     break;
+                 default:
+                     console.error(`Tela desconhecida: ${screenName}`);
+                     startScreen.classList.remove('hidden');
+             }
+        }
+
+        function populateLevelSelect() {
+            const currentSelection = levelSelect.value;
+            levelSelect.innerHTML = '<option value="" disabled selected>-- Escolha uma Zona --</option>';
+            for (const zoneName in gameData) {
+                const option = document.createElement('option');
+                option.value = zoneName;
+                const isCompleted = zoneCompletionStatus[zoneName];
+                option.textContent = zoneName + (isCompleted ? ' ✅' : '');
+                if (isCompleted) {
+                     option.classList.add('completed-level');
+                }
+                levelSelect.appendChild(option);
+            }
+            if (currentSelection && levelSelect.querySelector(`option[value="${currentSelection}"]`)) {
+                levelSelect.value = currentSelection;
+            } else {
+                levelSelect.selectedIndex = 0;
+            }
+        }
+
+        function updateLevelSelectOptions() {
+            populateLevelSelect();
+        }
+
+        // --- Funções do Modal Gemini ---
+        function setupGeminiLaunch() {
+            if (!currentChallenge) return;
+            const improvedPrompt = userPrompt.value;
+            const starterPrompt = `Contexto: ${currentChallenge.scenario}\n\nMinha tentativa de prompt (melhorado):\n"${improvedPrompt}"\n\n---\n\nCom base neste contexto e na minha tentativa de prompt, por favor, execute a tarefa implícita ou use isso como ponto de partida para gerar a resposta desejada. Se o prompt não estiver claro, peça esclarecimentos.`;
+            modalPromptDisplay.textContent = starterPrompt;
+        }
+
+        function openGeminiModal() {
+             playSound('buttonClick', 'E5');
+             setupGeminiLaunch();
+             geminiModal.classList.remove('hidden');
+             copyPromptBtn.focus();
+        }
+
+        function closeGeminiModal() {
+            playSound('buttonClick', 'C4');
+            geminiModal.classList.add('hidden');
+        }
+
+        function copyModalPrompt() {
+             const promptText = modalPromptDisplay.textContent;
+             navigator.clipboard.writeText(promptText).then(() => {
+                 copyPromptBtn.textContent = "Copiado!";
+                 copyPromptBtn.classList.add('bg-green-500', 'text-black');
+                 playSound('correct');
+                 setTimeout(() => {
+                     copyPromptBtn.textContent = "Copiar Prompt";
+                     copyPromptBtn.classList.remove('bg-green-500', 'text-black');
+                 }, 1500);
+             }).catch(err => {
+                 console.error('Erro ao copiar prompt: ', err);
+                 copyPromptBtn.textContent = "Erro ao Copiar";
+                 copyPromptBtn.classList.add('bg-red-500');
+                 playSound('incorrect');
+                 setTimeout(() => {
+                     copyPromptBtn.textContent = "Copiar Prompt";
+                     copyPromptBtn.classList.remove('bg-red-500');
+                 }, 2000);
+             });
+        }
+
+         // --- Funções do Modal de Apoio ---
+         function openSupportModal() {
+             playSound('buttonClick', 'F5'); // Som diferente para este modal
+             supportModal.classList.remove('hidden');
+         }
+
+         function closeSupportModal() {
+             playSound('buttonClick', 'D4');
+             supportModal.classList.add('hidden');
+         }
+
+         function copySupportKey() {
+             const keyText = document.getElementById('supportKey')?.textContent || "[CHAVE NÃO ENCONTRADA]";
+             if (keyText.startsWith('[')) { // Não copia o placeholder
+                 copySupportKeyBtn.textContent = "Chave Inválida";
+                 copySupportKeyBtn.classList.add('bg-red-500');
+                 playSound('incorrect');
+                 setTimeout(() => {
+                     copySupportKeyBtn.textContent = "Copiar Chave Pix";
+                     copySupportKeyBtn.classList.remove('bg-red-500');
+                 }, 2000);
+                 return;
+             }
+
+             navigator.clipboard.writeText(keyText).then(() => {
+                 copySupportKeyBtn.textContent = "Chave Copiada!";
+                 copySupportKeyBtn.classList.add('bg-green-500', 'text-black');
+                 playSound('correct');
+                 setTimeout(() => {
+                     copySupportKeyBtn.textContent = "Copiar Chave Pix";
+                     copySupportKeyBtn.classList.remove('bg-green-500', 'text-black');
+                 }, 1500);
+             }).catch(err => {
+                 console.error('Erro ao copiar chave Pix: ', err);
+                 copySupportKeyBtn.textContent = "Erro ao Copiar";
+                 copySupportKeyBtn.classList.add('bg-red-500');
+                 playSound('incorrect');
+                 setTimeout(() => {
+                     copySupportKeyBtn.textContent = "Copiar Chave Pix";
+                     copySupportKeyBtn.classList.remove('bg-red-500');
+                 }, 2000);
+             });
+         }
+
+        // --- Animação de Fundo (Meteoros) ---
+        let ctxBg;
+        let meteors = [];
+        const numMeteors = 50;
+
+        function setupBackgroundAnimation() {
+            if (!backgroundCanvas) return;
+            ctxBg = backgroundCanvas.getContext('2d');
+            resizeCanvas();
+            for (let i = 0; i < numMeteors; i++) {
+                meteors.push(createMeteor());
+            }
+            animateBackground();
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function resizeCanvas() {
+            if (!backgroundCanvas || !ctxBg) return;
+            backgroundCanvas.width = window.innerWidth;
+            backgroundCanvas.height = window.innerHeight;
+        }
+
+        function createMeteor() {
+            return {
+                x: Math.random() * backgroundCanvas.width,
+                y: Math.random() * -backgroundCanvas.height,
+                length: Math.random() * 15 + 5,
+                speed: Math.random() * 3 + 2,
+                opacity: Math.random() * 0.5 + 0.3
+            };
+        }
+
+        function animateBackground() {
+            if (!ctxBg) return;
+            ctxBg.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+            ctxBg.strokeStyle = 'rgba(224, 224, 224, 0.5)';
+            ctxBg.lineWidth = 1.5;
+
+            meteors.forEach((meteor, index) => {
+                meteor.y += meteor.speed;
+                meteor.x += meteor.speed / 4;
+                ctxBg.globalAlpha = meteor.opacity;
+                ctxBg.beginPath();
+                ctxBg.moveTo(meteor.x, meteor.y);
+                ctxBg.lineTo(meteor.x + meteor.length / 4, meteor.y + meteor.length);
+                ctxBg.stroke();
+                ctxBg.globalAlpha = 1.0;
+
+                if (meteor.y > backgroundCanvas.height + meteor.length) {
+                    meteors[index] = createMeteor();
+                    meteors[index].y = Math.random() * -100;
+                }
+            });
+            requestAnimationFrame(animateBackground);
+        }
+
+
+        // --- Inicialização e Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Botão Iniciar Jogo
+            startGameBtn.addEventListener('click', () => {
+                playSound('buttonClick', 'E4');
+                
+                // Primeiro exibe a tela do jogo para garantir que fique visível
+                showScreen('levelSelection');
+                
+                // Tenta iniciar o contexto de áudio de forma assíncrona
+                if (typeof Tone !== 'undefined' && !audioInitialized) {
+                    Tone.start().then(() => {
+                        console.log("Contexto de áudio iniciado via Tone.start().");
+                        audioInitialized = true; // Marca como inicializado após sucesso
+                        if (!soundsLoaded) {
+                             initializeAudio(); // Inicializa synths se não foram carregados
+                        }
+                        toggleBackgroundMusic(true); // Toca a música
+                    }).catch(e => {
+                        console.error("Erro ao iniciar Tone.js via Tone.start():", e);
+                        // Tenta inicializar mesmo em caso de erro (pode funcionar sem interação explícita em alguns casos)
+                         if (!soundsLoaded) {
+                             initializeAudio();
+                         }
+                         // Tenta tocar a música mesmo se Tone.start() falhar (pode funcionar se o contexto já estava ativo)
+                         toggleBackgroundMusic(true);
+                    });
+                } else if (soundsLoaded) {
+                     // Se o áudio já foi inicializado antes, apenas toca a música
+                     toggleBackgroundMusic(true);
+                } else {
+                    // Se Tone não está definido ou houve falha anterior, tenta inicializar de novo
+                    if(initializeAudio()) { // Tenta inicializar e verifica sucesso
+                       toggleBackgroundMusic(true);
+                    }
+                }
+            });
+
+            // Outros Listeners
+            levelSelect.addEventListener('change', (e) => { if (e.target.value) loadLevel(e.target.value); });
+            submitBtn.addEventListener('click', evaluatePrompt);
+            tryAgainBtn.addEventListener('click', tryAgain);
+            nextChallengeBtn.addEventListener('click', nextChallenge);
+            restartBtn.addEventListener('click', restartGame);
+            playAgainBtn.addEventListener('click', () => { if (allZonesCompleted()) restartGame(); else nextChallenge(); });
+            launchGeminiBtn.addEventListener('click', openGeminiModal);
+            closeModalBtn.addEventListener('click', closeGeminiModal);
+            copyPromptBtn.addEventListener('click', copyModalPrompt);
+            muteBtn.addEventListener('click', toggleMute);
+            supportBtn.addEventListener('click', openSupportModal); // Listener para abrir modal de apoio
+            closeSupportModalBtn.addEventListener('click', closeSupportModal); // Listener para fechar modal de apoio
+            copySupportKeyBtn.addEventListener('click', copySupportKey); // Listener para copiar chave Pix
+
+            // Início do Jogo
+            populateLevelSelect();
+            setupBackgroundAnimation();
+            showScreen('start'); // Começa na tela inicial
+            console.log("Comandante de Prompt pronto para a missão!");
+        });
+
+    </script>
+
+</body>
+</html>
