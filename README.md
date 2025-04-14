@@ -62,7 +62,7 @@ Simplesmente abra o arquivo `index.html` diretamente no seu navegador. Duplo cli
 
 ## Jogue Online
 
-Você pode jogar a versão hospedada em: https://seu-usuario.github.io/comandante-de-prompt/
+Você pode jogar a versão hospedada em: https://leonardobora.github.io/comandante-de-prompt/
 
 ## Recursos Utilizados
 
