@@ -24,7 +24,8 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden; /* Permite scroll vertical mas não horizontal */
+            padding: 20px 0; /* Adiciona um pouco de padding vertical */
         }
 
         /* Canvas de Fundo Animado */
@@ -48,9 +49,11 @@
             max-width: 800px;
             position: relative;
             z-index: 1;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto; /* Permite scroll vertical dentro do container */
             border-radius: 0.5rem;
-            margin: 1rem;
+            margin: 1rem auto; /* Auto margin horizontal para centralizar */
+            max-height: 90vh; /* Limita a altura para 90% da viewport */
         }
 
         /* Tela Inicial */
@@ -284,11 +287,53 @@
                 <h1 class="text-2xl text-cyan-400 mb-6">Comandante de Prompt</h1>
                 <div class="start-buttons flex flex-col items-center gap-4">
                      <button id="startGameBtn" class="btn btn-start">Iniciar Missão</button>
+                     <button id="instructionsBtn" class="btn btn-secondary">
+                         <i class="fas fa-info-circle"></i> Como Jogar </button>
                      <a href="https://www.linkedin.com/in/leonardobora/" target="_blank" class="btn btn-linkedin">
                          <i class="fab fa-linkedin"></i> Deixe seu feedback! </a>
                      <button id="supportBtn" class="btn btn-support">
                          <i class="fas fa-mug-hot"></i> Apoie o Criador </button>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Modal de Instruções -->
+        <div id="instructionsModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button id="closeInstructionsModalBtn" class="modal-close-btn">X</button>
+                <h3 class="text-lg text-cyan-400 mb-3">Como Jogar</h3>
+                <div class="text-xs mb-4 leading-relaxed text-left" style="max-height: 60vh; overflow-y: auto;">
+                    <p class="mb-3"><strong class="text-yellow-400">Objetivo:</strong> Melhorar prompts fracos e aprender técnicas avançadas de prompt engineering para IA generativa.</p>
+                    
+                    <p class="mb-3"><strong class="text-yellow-400">Como funciona:</strong></p>
+                    <ol class="list-decimal ml-4 mb-3 space-y-2">
+                        <li>Escolha uma zona de missão (cada uma com cenários diferentes)</li>
+                        <li>Leia o cenário apresentado e o prompt fraco</li>
+                        <li>Reescreva o prompt para torná-lo mais eficaz, seguindo as melhores práticas</li>
+                        <li>Receba feedback em tempo real sobre seu desempenho</li>
+                        <li>Ganhe pontos por cada elemento de prompt bem implementado</li>
+                    </ol>
+                    
+                    <p class="mb-3"><strong class="text-yellow-400">Elementos avaliados em cada prompt:</strong></p>
+                    <ul class="list-disc ml-4 mb-3 space-y-2">
+                        <li><strong class="text-green-400">Persona:</strong> Definir um papel ou perspectiva (ex: "Como um gerente...", "Você é...", "Aja como...")</li>
+                        <li><strong class="text-green-400">Tarefa:</strong> Incluir um verbo de ação claro (ex: "Resuma", "Liste", "Compare", "Analise")</li>
+                        <li><strong class="text-green-400">Contexto:</strong> Fornecer detalhes de fundo suficientes (tópico, fontes, público-alvo)</li>
+                        <li><strong class="text-green-400">Formato:</strong> Especificar o formato de saída desejado (ex: tabela, e-mail, lista)</li>
+                        <li><strong class="text-green-400">Especificidade:</strong> Incluir restrições ou detalhes específicos (limite de palavras, tom)</li>
+                        <li><strong class="text-green-400">Tamanho:</strong> Criar um prompt detalhado o suficiente (10+ palavras é melhor)</li>
+                    </ul>
+                    
+                    <p class="mb-3"><strong class="text-yellow-400">Dicas:</strong></p>
+                    <ul class="list-disc ml-4 mb-3 space-y-2">
+                        <li>Quanto mais específico e detalhado for seu prompt, melhores resultados você obterá</li>
+                        <li>Revise o feedback para entender como melhorar</li>
+                        <li>Você pode até mesmo usar seu prompt aprimorado no Gemini após completar um desafio!</li>
+                    </ul>
+                    
+                    <p class="text-center text-fuchsia-400 mt-4">Boa sorte, Comandante de Prompt!</p>
+                </div>
+                <button id="closeInstructionsBtn" class="btn btn-primary mt-4">Entendido!</button>
             </div>
         </div>
 
@@ -391,12 +436,12 @@
     <script>
         // --- Pontos de Feedback Padrão ---
         const defaultFeedbackPoints = {
-            persona: "Seu prompt especifica um papel ou perspectiva (ex: 'Como um gerente...', 'Você é...', 'Aja como...')?",
-            task: "O verbo de ação principal está claro e direto (ex: 'Resuma', 'Rascunhe', 'Liste', 'Compare', 'Gere', 'Crie')?",
-            context: "Você forneceu detalhes de fundo suficientes (ex: tópico, @documento_fonte, público-alvo, objetivo principal)?",
-            format: "Você sugeriu um formato de saída desejado (ex: 'tabela', 'e-mail', 'lista de tópicos', 'parágrafo', 'json')?",
-            specificity: "Restrições ou detalhes específicos estão incluídos (ex: limite de palavras/itens, tom desejado, elementos-chave obrigatórios)?",
-            length: "O prompt é detalhado o suficiente (~10+ palavras geralmente é melhor)? Prompts muito curtos podem ser vagos."
+            persona: "Seu prompt especifica um papel ou perspectiva clara para a IA (ex: 'Como um gerente de marketing...', 'Aja como especialista em...', 'Você é um analista financeiro...')? Definir uma persona ajuda a IA a entender o tom, expertise e tipo de resposta esperados.",
+            task: "O verbo de ação principal está claro e direto, indicando exatamente o que a IA deve fazer (ex: 'Resuma', 'Analise', 'Compare', 'Liste', 'Explique', 'Crie', 'Rascunhe')? A instrução deve ser específica e direta.",
+            context: "Você forneceu contexto e detalhes de fundo suficientes (ex: tópico específico, @documento_fonte, histórico relevante, público-alvo, objetivo principal da solicitação)? Quanto mais contexto relevante, melhor a resposta.",
+            format: "Você especificou o formato de saída desejado para a resposta (ex: 'tabela', 'e-mail formal', 'lista numerada', 'parágrafo curto', 'markdown', 'bullets')? Isso ajuda a estruturar a resposta de forma útil.",
+            specificity: "Seu prompt inclui restrições ou detalhes específicos para guiar a resposta (ex: limite de palavras/itens, tom desejado, elementos-chave que devem ser incluídos, aspectos a evitar)? Quanto mais específico, mais preciso o resultado.",
+            length: "O prompt tem extensão e detalhamento adequados (~10+ palavras ou mais é geralmente melhor)? Prompts muito curtos tendem a ser vagos e ambíguos, enquanto prompts bem elaborados fornecem direção clara."
         };
 
         // --- Dados do Jogo ---
@@ -1180,6 +1225,29 @@
             supportBtn.addEventListener('click', openSupportModal); // Listener para abrir modal de apoio
             closeSupportModalBtn.addEventListener('click', closeSupportModal); // Listener para fechar modal de apoio
             copySupportKeyBtn.addEventListener('click', copySupportKey); // Listener para copiar chave Pix
+            
+            // Listeners do modal de instruções
+            const instructionsModal = document.getElementById('instructionsModal');
+            const instructionsBtn = document.getElementById('instructionsBtn');
+            const closeInstructionsModalBtn = document.getElementById('closeInstructionsModalBtn');
+            const closeInstructionsBtn = document.getElementById('closeInstructionsBtn');
+            
+            // Abrir modal de instruções
+            instructionsBtn.addEventListener('click', () => {
+                playSound('buttonClick', 'G4');
+                instructionsModal.classList.remove('hidden');
+            });
+            
+            // Fechar modal de instruções (X e botão Entendido)
+            closeInstructionsModalBtn.addEventListener('click', () => {
+                playSound('buttonClick', 'C4');
+                instructionsModal.classList.add('hidden');
+            });
+            
+            closeInstructionsBtn.addEventListener('click', () => {
+                playSound('buttonClick', 'E4');
+                instructionsModal.classList.add('hidden');
+            });
 
             // Início do Jogo
             populateLevelSelect();
