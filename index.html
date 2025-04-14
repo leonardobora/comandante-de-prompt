@@ -279,18 +279,20 @@
 
     <div class="game-container p-4 sm:p-6 text-xs sm:text-sm">
 
-        <div id="startScreen" class="">
-            <h1>Comandante de Prompt</h1>
-            <div class="start-buttons">
-                 <button id="startGameBtn" class="btn btn-start">Iniciar Missão</button>
-                 <a href="https://www.linkedin.com/in/leonardobora/" target="_blank" class="btn btn-linkedin">
-                     <i class="fab fa-linkedin"></i> Deixe seu feedback! </a>
-                 <button id="supportBtn" class="btn btn-support">
-                     <i class="fas fa-mug-hot"></i> Apoie o Criador </button>
+        <div id="startScreen" class="modal-overlay">
+            <div class="modal-content">
+                <h1 class="text-2xl text-cyan-400 mb-6">Comandante de Prompt</h1>
+                <div class="start-buttons flex flex-col items-center gap-4">
+                     <button id="startGameBtn" class="btn btn-start">Iniciar Missão</button>
+                     <a href="https://www.linkedin.com/in/leonardobora/" target="_blank" class="btn btn-linkedin">
+                         <i class="fab fa-linkedin"></i> Deixe seu feedback! </a>
+                     <button id="supportBtn" class="btn btn-support">
+                         <i class="fas fa-mug-hot"></i> Apoie o Criador </button>
+                </div>
             </div>
         </div>
 
-        <div id="gameArea" class="hidden">
+        <div id="gameArea" class="">
             <div class="game-header">
                 <h1 class="game-title-header">Comandante de Prompt</h1>
                 <div class="game-stats">
@@ -903,8 +905,7 @@
 
         // Gerencia qual tela é exibida
         function showScreen(screenName) {
-             startScreen.classList.add('hidden');
-             gameArea.classList.add('hidden');
+             // Esconde telas específicas do jogo, mas não o gameArea principal
              gameOverScreen.classList.add('hidden');
              winScreen.classList.add('hidden');
              levelSelectionArea.classList.add('hidden');
@@ -917,7 +918,6 @@
                      toggleBackgroundMusic(false); // Garante que música não toque na tela inicial
                      break;
                  case 'levelSelection':
-                     gameArea.classList.remove('hidden');
                      levelSelectionArea.classList.remove('hidden');
                      challengeScreen.classList.add('hidden');
                      resultsScreen.classList.add('hidden');
@@ -942,9 +942,15 @@
                      break;
                  case 'gameOver':
                      gameOverScreen.classList.remove('hidden');
+                     levelSelectionArea.classList.add('hidden');
+                     challengeScreen.classList.add('hidden');
+                     resultsScreen.classList.add('hidden');
                      break;
                  case 'win':
                      winScreen.classList.remove('hidden');
+                     levelSelectionArea.classList.add('hidden');
+                     challengeScreen.classList.add('hidden');
+                     resultsScreen.classList.add('hidden');
                      break;
                  default:
                      console.error(`Tela desconhecida: ${screenName}`);
@@ -1125,9 +1131,10 @@
             startGameBtn.addEventListener('click', () => {
                 playSound('buttonClick', 'E4');
                 
-                // Garantimos que a tela inicial é ocultada e o jogo é exibido
+                // Apenas escondemos o modal da tela inicial
                 startScreen.classList.add('hidden');
-                gameArea.classList.remove('hidden');
+                
+                // Exibir a área de seleção de nível
                 levelSelectionArea.classList.remove('hidden');
                 
                 // Tenta iniciar o contexto de áudio de forma assíncrona
@@ -1157,9 +1164,6 @@
                        toggleBackgroundMusic(true);
                     }
                 }
-                
-                // Chama showScreen após para configurar o restante da interface
-                showScreen('levelSelection');
             });
 
             // Outros Listeners
@@ -1180,7 +1184,12 @@
             // Início do Jogo
             populateLevelSelect();
             setupBackgroundAnimation();
-            showScreen('start'); // Começa na tela inicial
+            levelSelect.value = "";
+            submitBtn.disabled = true;
+            userPrompt.disabled = true;
+            scenarioText.textContent = "Selecione uma zona de missão para começar...";
+            weakPromptText.textContent = '';
+            // O jogo já está visível, apenas mostrando o modal de início
             console.log("Comandante de Prompt pronto para a missão!");
         });
 
