@@ -1176,7 +1176,7 @@
             startGameBtn.addEventListener('click', () => {
                 playSound('buttonClick', 'E4');
                 
-                // Apenas escondemos o modal da tela inicial
+                // Esconder a tela inicial completamente
                 startScreen.classList.add('hidden');
                 
                 // Exibir a área de seleção de nível
@@ -1186,28 +1186,32 @@
                 if (typeof Tone !== 'undefined' && !audioInitialized) {
                     Tone.start().then(() => {
                         console.log("Contexto de áudio iniciado via Tone.start().");
-                        audioInitialized = true; // Marca como inicializado após sucesso
+                        audioInitialized = true;
                         if (!soundsLoaded) {
-                             initializeAudio(); // Inicializa synths se não foram carregados
+                            initializeAudio();
                         }
-                        toggleBackgroundMusic(true); // Toca a música
+                        toggleBackgroundMusic(true);
                     }).catch(e => {
                         console.error("Erro ao iniciar Tone.js via Tone.start():", e);
-                        // Tenta inicializar mesmo em caso de erro (pode funcionar sem interação explícita em alguns casos)
-                         if (!soundsLoaded) {
-                             initializeAudio();
-                         }
-                         // Tenta tocar a música mesmo se Tone.start() falhar (pode funcionar se o contexto já estava ativo)
-                         toggleBackgroundMusic(true);
+                        if (!soundsLoaded) {
+                            initializeAudio();
+                        }
+                        toggleBackgroundMusic(true);
                     });
                 } else if (soundsLoaded) {
-                     // Se o áudio já foi inicializado antes, apenas toca a música
-                     toggleBackgroundMusic(true);
+                    toggleBackgroundMusic(true);
                 } else {
-                    // Se Tone não está definido ou houve falha anterior, tenta inicializar de novo
-                    if(initializeAudio()) { // Tenta inicializar e verifica sucesso
-                       toggleBackgroundMusic(true);
+                    if(initializeAudio()) {
+                        toggleBackgroundMusic(true);
                     }
+                }
+            });
+            
+            // Permitir fechar o modal inicial ao clicar fora dele
+            startScreen.addEventListener('click', (event) => {
+                if (event.target === startScreen) {
+                    // Usar o mesmo comportamento do botão Iniciar
+                    startGameBtn.click();
                 }
             });
 
